@@ -46,3 +46,30 @@ export async function postAdvice(req: Request, res: Response): Promise<void> {
     }
 
 }
+
+export async function getAdviceById(req: Request, res: Response) {
+
+    try {
+
+        await connect();
+
+        const id = req.params.id;
+        const result = await AdviceModel.findById(id);
+
+        if (!result) {
+           res.status(404).json({ message: 'Advice not found' })
+            return;
+        }
+
+        res.json(result);
+    }
+
+    catch (error) {
+        res.status(500).json({ message: 'Error getting advice by ID', error });
+    }
+
+    finally {
+        await disconnect();
+    }
+
+}

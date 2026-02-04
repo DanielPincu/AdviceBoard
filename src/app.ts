@@ -24,6 +24,13 @@ export async function startServer() {
     setupCors();
 
     app.use(express.json());
+    //Handle invalid JSON error, like trailing commas...
+    app.use((err: any, req: Request, res: Response, next: Function) => {
+        if (err instanceof SyntaxError && 'body' in err) {
+            return res.status(400).json({ message: 'Invalid JSON body' });
+        }
+        next(err);
+    });
 
     app.use('/api', routes);
 

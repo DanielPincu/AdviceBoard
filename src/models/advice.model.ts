@@ -12,7 +12,7 @@ const adviceSchema = new Schema({
     {
       content: { type: String, required: true, minlength: 1, maxlength: 2000 },
       createdAt: { type: Date, default: Date.now, required: true },
-      anonymous: { type: Boolean, required: true, default: false },
+      anonymous: { type: Boolean, required: true },
       _createdBy: { type: Schema.Types.ObjectId, ref: 'User' }
     }
   ]

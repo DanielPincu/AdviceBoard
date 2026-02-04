@@ -118,6 +118,16 @@ export async function addReply(req: Request, res: Response) {
             return;
         }
 
+        if (typeof anonymous !== 'boolean') {
+            res.status(400).json({ message: 'anonymous must be true or false' });
+            return;
+        }
+
+        if (anonymous === true && _createdBy) {
+            res.status(400).json({ message: 'Do not send user id for anonymous replies' });
+            return;
+        }
+
         if (anonymous === false && !_createdBy) {
             res.status(400).json({ message: 'User id is required when reply is not anonymous' });
             return;
@@ -133,8 +143,8 @@ export async function addReply(req: Request, res: Response) {
         advice.replies.push({
             content,
             createdAt: new Date(),
-            anonymous: Boolean(anonymous),
-            _createdBy: _createdBy
+            anonymous,
+            _createdBy: anonymous ? undefined : _createdBy
         } as any);
 
         await advice.save();

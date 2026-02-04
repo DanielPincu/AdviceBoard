@@ -6,6 +6,6 @@ export interface Advice {
   content: string;
   createdAt: Date;
   anonymous: boolean;
-  _createdBy: User['id'];
+  _createdBy?: User['id'] | { _id: User['id']; username: string };
   replies: Reply[];
 }

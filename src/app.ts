@@ -11,10 +11,10 @@ const app: Application = express();
 
 function setupCors() {
     app.use(cors({
-        origin: (origin, callback) => callback(null, true),
-        methods: ['GET', 'POST', 'PUT', 'DELETE'],
-        allowedHeaders: ['auth-token', 'Origin', 'X-Requested-With', 'Content-Type', 'Accept'],
-        credentials: true,
+        origin: '*',
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: false,
     }));
 }
 

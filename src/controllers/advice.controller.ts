@@ -80,57 +80,67 @@ export async function getAdviceById(req: Request, res: Response) {
 }
 
 export async function deleteAdviceById(req: Request, res: Response) {
+  try {
+    const id = req.params.id
+    const userId = (req as any).user?.id
 
-    try {
+    const advice = await AdviceModel.findById(id)
 
-        const id = req.params.id;
-        const result = await AdviceModel.findByIdAndDelete(id);
-
-        if (!result) {
-            res.status(404).json({ message: 'Advice not found' });
-            return;
-        }
-
-        res.json({
-            message: 'Advice deleted'
-        });
-        
-        
+    if (!advice) {
+      res.status(404).json({ message: 'Advice not found' })
+      return
     }
 
-    catch (error) {
-        res.status(500).json({ message: 'Error deleting advice by ID', error });
+    if (!advice._createdBy || String(advice._createdBy) !== String(userId)) {
+      res.status(403).json({ message: 'You can only delete your own advice' })
+      return
     }
 
+    await advice.deleteOne()
+    res.json({ message: 'Advice deleted' })
+  } catch (error) {
+    console.error('deleteAdviceById error:', error)
+    res.status(500).json({ message: 'Error deleting advice by ID' })
+  }
 }
 
 
 export async function updateAdviceById(req: Request, res: Response) {
   try {
     const id = req.params.id
+    const userId = (req as any).user?.id
 
-    const updated = await AdviceModel.findByIdAndUpdate(id, req.body, { new: true, runValidators: true })
+    const advice = await AdviceModel.findById(id)
 
-    if (!updated) {
+    if (!advice) {
       res.status(404).json({ message: 'Advice not found' })
       return
     }
 
+    if (!advice._createdBy || String(advice._createdBy) !== String(userId)) {
+      res.status(403).json({ message: 'You can only edit your own advice' })
+      return
+    }
+
+    const { title, content, anonymous } = req.body
+
+    if (typeof title === 'string') advice.title = title
+    if (typeof content === 'string') advice.content = content
+    if (typeof anonymous === 'boolean') advice.anonymous = anonymous
+
+    const saved = await advice.save()
+
     const populated = await AdviceModel
-      .findById(updated._id)
+      .findById(saved._id)
       .populate('_createdBy', 'username')
       .populate('replies._createdBy', 'username')
 
     res.status(200).json(populated)
   } catch (error: any) {
     if (error?.name === 'ValidationError') {
-      res.status(400).json({
-        message: 'Validation failed',
-        errors: error.errors,
-      })
+      res.status(400).json({ message: 'Validation failed', errors: error.errors })
       return
     }
-
     console.error('updateAdviceById error:', error)
     res.status(500).json({ message: 'Error updating advice by ID' })
   }
@@ -189,30 +199,40 @@ export async function addReply(req: Request, res: Response) {
 }
 
 export async function deleteReplyById(req: Request, res: Response) {
-    try {
-        const { adviceId, replyId } = req.params;
+  try {
+    const { adviceId, replyId } = req.params
+    const userId = (req as any).user?.id
 
-        const advice = await AdviceModel.findById(adviceId);
+    const advice = await AdviceModel.findById(adviceId)
 
-        if (!advice) {
-            res.status(404).json({ message: 'Advice not found' });
-            return;
-        }
-
-        const replyIndex = advice.replies.findIndex(
-            (r: any) => String(r._id) === String(replyId)
-        );
-
-        if (replyIndex === -1) {
-            res.status(404).json({ message: 'Reply not found' });
-            return;
-        }
-
-        advice.replies.splice(replyIndex, 1);
-        await advice.save();
-
-        res.json({ message: 'Reply deleted' });
-    } catch (error) {
-        res.status(500).json({ message: 'Error deleting reply', error });
+    if (!advice) {
+      res.status(404).json({ message: 'Advice not found' })
+      return
     }
+
+    const reply = (advice.replies as any).id(replyId)
+
+    if (!reply) {
+      res.status(404).json({ message: 'Reply not found' })
+      return
+    }
+
+    if (!reply._createdBy || String(reply._createdBy) !== String(userId)) {
+      res.status(403).json({ message: 'You can only delete your own reply' })
+      return
+    }
+
+    reply.deleteOne()
+    await advice.save()
+
+    const populated = await AdviceModel
+      .findById(advice._id)
+      .populate('_createdBy', 'username')
+      .populate('replies._createdBy', 'username')
+
+    res.status(200).json(populated)
+  } catch (error) {
+    console.error('deleteReplyById error:', error)
+    res.status(500).json({ message: 'Error deleting reply' })
+  }
 }

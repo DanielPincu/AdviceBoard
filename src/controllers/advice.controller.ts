@@ -6,7 +6,11 @@ export async function getAllAdvices(req: Request, res: Response) {
 
     try {
 
-        const result = await AdviceModel.find({});
+        const result = await AdviceModel
+            .find({})
+            .populate('_createdBy', 'username')
+            .populate('replies._createdBy', 'username')
+            .sort({ createdAt: -1 });
         
         res.json(result);
     }
@@ -35,8 +39,9 @@ export async function postAdvice(req: Request, res: Response): Promise<void> {
             _createdBy: anonymous ? undefined : userId,
         })
 
-        const result = await advice.save()
-        res.status(201).json(result)
+        const saved = await advice.save()
+        const populated = await saved.populate('_createdBy', 'username')
+        res.status(201).json(populated)
     } catch (error: any) {
         if (error?.name === 'ValidationError') {
             res.status(400).json({
@@ -55,7 +60,10 @@ export async function getAdviceById(req: Request, res: Response) {
     try {
 
         const id = req.params.id;
-        const result = await AdviceModel.findById(id);
+        const result = await AdviceModel
+            .findById(id)
+            .populate('_createdBy', 'username')
+            .populate('replies._createdBy', 'username');
 
         if (!result) {
            res.status(404).json({ message: 'Advice not found' })
@@ -156,7 +164,12 @@ export async function addReply(req: Request, res: Response) {
 
         await advice.save()
 
-        res.status(201).json(advice)
+        const populated = await AdviceModel
+            .findById(advice._id)
+            .populate('_createdBy', 'username')
+            .populate('replies._createdBy', 'username')
+
+        res.status(201).json(populated)
     } catch (error: any) {
         if (error?.name === 'ValidationError') {
             res.status(400).json({

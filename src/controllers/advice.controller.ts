@@ -96,7 +96,7 @@ export async function deleteAdviceById(req: Request, res: Response) {
     }
 
     catch (error) {
-        res.status(500).json({ message: 'Error updating advice by ID', error });
+        res.status(500).json({ message: 'Error deleting advice by ID', error });
     }
 
     finally {

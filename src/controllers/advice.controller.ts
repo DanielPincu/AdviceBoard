@@ -18,21 +18,36 @@ export async function getAllAdvices(req: Request, res: Response) {
 }
 
 export async function postAdvice(req: Request, res: Response): Promise<void> {
-
-    const data = req.body;
-
     try {
+        const { title, content, anonymous } = req.body
 
-        const advice = new AdviceModel(data);
-        const result = await advice.save();
-        
-        res.status(201).json(result);
+        if (!title || !content || typeof anonymous !== 'boolean') {
+            res.status(400).json({ message: 'title, content and anonymous are required' })
+            return
+        }
+
+        const userId = (req as any).user?.id
+
+        const advice = new AdviceModel({
+            title,
+            content,
+            anonymous,
+            _createdBy: anonymous ? undefined : userId,
+        })
+
+        const result = await advice.save()
+        res.status(201).json(result)
+    } catch (error: any) {
+        if (error?.name === 'ValidationError') {
+            res.status(400).json({
+                message: 'Validation failed',
+                errors: error.errors,
+            })
+            return
+        }
+        console.error('postAdvice error:', error)
+        res.status(500).json({ message: 'Error posting advice' })
     }
-
-    catch (error) {
-        res.status(500).json({ message: 'Error posting advice', error });
-    }
-
 }
 
 export async function getAdviceById(req: Request, res: Response) {
@@ -87,7 +102,7 @@ export async function updateAdviceById(req: Request, res: Response) {
     try {
 
         const id = req.params.id;
-        const result = await AdviceModel.findByIdAndUpdate(id, req.body, { new: true });
+        const result = await AdviceModel.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
 
         if (!result) {
             res.status(404).json({ message: 'Advice not found' });
@@ -110,48 +125,48 @@ export async function updateAdviceById(req: Request, res: Response) {
 
 export async function addReply(req: Request, res: Response) {
     try {
-        const { id } = req.params;
-        const { content, anonymous, _createdBy } = req.body;
+        const { id } = req.params
+        const { content, anonymous } = req.body
 
         if (!content) {
-            res.status(400).json({ message: 'Reply content is required' });
-            return;
+            res.status(400).json({ message: 'Reply content is required' })
+            return
         }
 
         if (typeof anonymous !== 'boolean') {
-            res.status(400).json({ message: 'anonymous must be true or false' });
-            return;
+            res.status(400).json({ message: 'anonymous must be true or false' })
+            return
         }
 
-        if (anonymous === true && _createdBy) {
-            res.status(400).json({ message: 'Do not send user id for anonymous replies' });
-            return;
-        }
+        const userId = (req as any).user?.id
 
-        if (anonymous === false && !_createdBy) {
-            res.status(400).json({ message: 'User id is required when reply is not anonymous' });
-            return;
-        }
-
-        const advice = await AdviceModel.findById(id);
+        const advice = await AdviceModel.findById(id)
 
         if (!advice) {
-            res.status(404).json({ message: 'Advice not found' });
-            return;
+            res.status(404).json({ message: 'Advice not found' })
+            return
         }
 
         advice.replies.push({
             content,
             createdAt: new Date(),
             anonymous,
-            _createdBy: anonymous ? undefined : _createdBy
-        } as any);
+            _createdBy: anonymous ? undefined : userId,
+        } as any)
 
-        await advice.save();
+        await advice.save()
 
-        res.status(201).json(advice);
-    } catch (error) {
-        res.status(500).json({ message: 'Error adding reply', error });
+        res.status(201).json(advice)
+    } catch (error: any) {
+        if (error?.name === 'ValidationError') {
+            res.status(400).json({
+                message: 'Validation failed',
+                errors: error.errors,
+            })
+            return
+        }
+        console.error('addReply error:', error)
+        res.status(500).json({ message: 'Error adding reply' })
     }
 }
 

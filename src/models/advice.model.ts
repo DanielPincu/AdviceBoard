@@ -6,14 +6,14 @@ const adviceSchema = new Schema({
   content: { type: String, required: true, minlength: 3, maxlength: 2000 },
   createdAt: { type: Date, default: Date.now, required: true },
   anonymous: { type: Boolean, required: true },
-  _createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  _createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: false },
 
   replies: [
     {
       content: { type: String, required: true, minlength: 1, maxlength: 2000 },
       createdAt: { type: Date, default: Date.now, required: true },
       anonymous: { type: Boolean, required: true },
-      _createdBy: { type: Schema.Types.ObjectId, ref: 'User' }
+      _createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: false }
     }
   ]
 });

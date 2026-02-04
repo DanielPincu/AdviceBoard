@@ -36,7 +36,7 @@ export async function postAdvice(req: Request, res: Response): Promise<void> {
             title,
             content,
             anonymous,
-            _createdBy: anonymous ? undefined : userId,
+            _createdBy: userId,
         })
 
         const saved = await advice.save()
@@ -174,7 +174,7 @@ export async function addReply(req: Request, res: Response) {
             content,
             createdAt: new Date(),
             anonymous,
-            _createdBy: anonymous ? undefined : userId,
+            _createdBy: userId,
         } as any)
 
         await advice.save()

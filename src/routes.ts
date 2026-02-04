@@ -4,7 +4,10 @@ import {
     getAllAdvices, 
     postAdvice, 
     deleteAdviceById, 
-    updateAdviceById } from './controllers/advice.controller'
+    updateAdviceById,
+    addReply,
+    deleteReplyById
+} from './controllers/advice.controller'
 
 const routes: Router = Router();
 
@@ -13,6 +16,10 @@ routes.get('/advices', getAllAdvices);
 routes.get('/advices/:id', getAdviceById);
 routes.delete('/advices/:id', deleteAdviceById);
 routes.put('/advices/:id', updateAdviceById);
+
+// Replies
+routes.post('/advices/:id/replies', addReply);
+routes.delete('/advices/:adviceId/replies/:replyId', deleteReplyById);
 
 
 export default routes;

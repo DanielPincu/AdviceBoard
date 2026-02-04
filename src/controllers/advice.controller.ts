@@ -106,29 +106,34 @@ export async function deleteAdviceById(req: Request, res: Response) {
 
 
 export async function updateAdviceById(req: Request, res: Response) {
+  try {
+    const id = req.params.id
 
-    try {
+    const updated = await AdviceModel.findByIdAndUpdate(id, req.body, { new: true, runValidators: true })
 
-        const id = req.params.id;
-        const result = await AdviceModel.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
-
-        if (!result) {
-            res.status(404).json({ message: 'Advice not found' });
-            return;
-        }
-
-        res.json({
-            message: 'Advice updated',
-            data: result
-        });
-        
-        
+    if (!updated) {
+      res.status(404).json({ message: 'Advice not found' })
+      return
     }
 
-    catch (error) {
-        res.status(500).json({ message: 'Error updating advice by ID', error });
+    const populated = await AdviceModel
+      .findById(updated._id)
+      .populate('_createdBy', 'username')
+      .populate('replies._createdBy', 'username')
+
+    res.status(200).json(populated)
+  } catch (error: any) {
+    if (error?.name === 'ValidationError') {
+      res.status(400).json({
+        message: 'Validation failed',
+        errors: error.errors,
+      })
+      return
     }
 
+    console.error('updateAdviceById error:', error)
+    res.status(500).json({ message: 'Error updating advice by ID' })
+  }
 }
 
 export async function addReply(req: Request, res: Response) {

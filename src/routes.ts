@@ -8,7 +8,8 @@ import {
     addReply,
     deleteReplyById
 } from './controllers/advice.controller'
-import { verifyToken, registerUser, loginUser } from './controllers/auth.controller'
+import { registerUser, loginUser } from './controllers/auth.controller'
+import { verifyToken } from './middleware/auth.middleware'
 
 const routes: Router = Router();
 
@@ -16,13 +17,16 @@ const routes: Router = Router();
 routes.post('/user/register', registerUser);
 routes.post('/user/login', loginUser);
 
-routes.post('/advices', verifyToken, postAdvice);
+// Advices (public)
 routes.get('/advices', getAllAdvices);
 routes.get('/advices/:id', getAdviceById);
+
+// Advices (protected)
+routes.post('/advices', verifyToken, postAdvice);
 routes.delete('/advices/:id', verifyToken, deleteAdviceById);
 routes.put('/advices/:id', verifyToken, updateAdviceById);
 
-// Replies
+// Replies (protected)
 routes.post('/advices/:id/replies', verifyToken, addReply);
 routes.delete('/advices/:adviceId/replies/:replyId', verifyToken, deleteReplyById);
 

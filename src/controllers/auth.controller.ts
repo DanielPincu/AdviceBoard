@@ -1,4 +1,4 @@
-import { type Request, type Response, type NextFunction } from 'express'
+import { type Request, type Response } from 'express'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 
@@ -93,24 +93,3 @@ export async function loginUser(req: Request, res: Response) {
     }
 
 }
-
-
-export function verifyToken(req: Request, res: Response, next: NextFunction) {
-    const authHeader = req.header('Authorization') || req.header('auth-token');
-    if (!authHeader) {
-        res.status(401).json({ error: 'Access Denied' });
-        return;
-    }
-
-    const token = authHeader.startsWith('Bearer ')
-        ? authHeader.slice(7)
-        : authHeader;
-
-    try {
-        const decoded = jwt.verify(token, process.env.TOKEN_SECRET as string) as any;
-        (req as any).user = decoded; // make user available to downstream handlers
-        next();
-    } catch (error) {
-        res.status(401).json({ error: 'Invalid Token' });
-    }
-}   

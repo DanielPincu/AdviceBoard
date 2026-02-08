@@ -1,30 +1,11 @@
-import  { type Request, type Response, type NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
-import Joi, { ValidationResult } from 'joi';
+import { type Request, type Response, type NextFunction } from 'express'
+import jwt from 'jsonwebtoken'
+import bcrypt from 'bcrypt'
 
 import { User } from '../interfaces/user.interface'
 import { userModel } from '../models/user.model'
+import { validateUserRegistrationInfo, validateUserLoginInfo } from '../validators/auth.validator'
 
-
-export function validateUserRegistrationInfo(data: User): ValidationResult {
-    const schema = Joi.object({
-        username: Joi.string().min(3).max(255).required(),
-        email: Joi.string().email().min(6).max(255).required(),
-        password: Joi.string().min(8).max(255).required()
-    })
-
-    return schema.validate(data);
-}
-
-export function validateUserLoginInfo(data: User): ValidationResult {
-    const schema = Joi.object({
-        email: Joi.string().email().min(6).max(255).required(),
-        password: Joi.string().min(8).max(255).required()
-    })
-
-    return schema.validate(data);
-}
 
 
 export async function registerUser(req: Request, res: Response) {

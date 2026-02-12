@@ -18,4 +18,4 @@ const adviceSchema = new Schema({
   ]
 });
 
-export const AdviceModel = model<Advice>('Advice', adviceSchema);
+export const adviceModel = model<Advice>('Advice', adviceSchema);

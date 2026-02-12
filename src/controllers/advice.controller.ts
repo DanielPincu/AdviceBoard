@@ -1,18 +1,40 @@
+import { Types } from 'mongoose';
 import { Request, Response } from 'express';
-import { AdviceModel } from '../models/advice.model';
+import { adviceModel } from '../models/advice.model';
+import { sanitizeAdvice } from '../utils/sanitizeAdvice';
+
+
+async function findAndPopulateAdvice(id: string | Types.ObjectId) {
+  return adviceModel
+    .findById(id)
+    .populate('_createdBy', 'username')
+    .populate('replies._createdBy', 'username')
+}
+
+function getUserId(req: Request): string | undefined {
+  return (req as any).user?.id
+}
+
+function forbidden(res: Response, message: string) {
+  res.status(403).json({ message })
+}
+
+function notFound(res: Response, message: string) {
+  res.status(404).json({ message })
+}
 // DB connection is handled at app startup/shutdown
 
 export async function getAllAdvices(req: Request, res: Response) {
 
     try {
 
-        const result = await AdviceModel
+        const result = await adviceModel
             .find({})
             .populate('_createdBy', 'username')
             .populate('replies._createdBy', 'username')
             .sort({ createdAt: -1 });
         
-        res.json(result);
+        res.json(result.map(sanitizeAdvice));
     }
 
     catch (error) {
@@ -30,9 +52,9 @@ export async function postAdvice(req: Request, res: Response): Promise<void> {
             return
         }
 
-        const userId = (req as any).user?.id
+        const userId = getUserId(req)
 
-        const advice = new AdviceModel({
+        const advice = new adviceModel({
             title,
             content,
             anonymous,
@@ -40,8 +62,8 @@ export async function postAdvice(req: Request, res: Response): Promise<void> {
         })
 
         const saved = await advice.save()
-        const populated = await saved.populate('_createdBy', 'username')
-        res.status(201).json(populated)
+        const populated = await findAndPopulateAdvice(saved._id)
+        res.status(201).json(sanitizeAdvice(populated))
     } catch (error: any) {
         if (error?.name === 'ValidationError') {
             res.status(400).json({
@@ -59,18 +81,16 @@ export async function getAdviceById(req: Request, res: Response) {
 
     try {
 
-        const id = req.params.id;
-        const result = await AdviceModel
-            .findById(id)
-            .populate('_createdBy', 'username')
-            .populate('replies._createdBy', 'username');
+        const rawId = req.params.id
+        const id = Array.isArray(rawId) ? rawId[0] : rawId
+        const result = await findAndPopulateAdvice(id)
 
         if (!result) {
-           res.status(404).json({ message: 'Advice not found' })
-            return;
+          notFound(res, 'Advice not found')
+          return
         }
 
-        res.json(result);
+        res.json(sanitizeAdvice(result));
     }
 
     catch (error) {
@@ -81,18 +101,19 @@ export async function getAdviceById(req: Request, res: Response) {
 
 export async function deleteAdviceById(req: Request, res: Response) {
   try {
-    const id = req.params.id
-    const userId = (req as any).user?.id
+    const rawId = req.params.id
+    const id = Array.isArray(rawId) ? rawId[0] : rawId
+    const userId = getUserId(req)
 
-    const advice = await AdviceModel.findById(id)
+    const advice = await adviceModel.findById(id)
 
     if (!advice) {
-      res.status(404).json({ message: 'Advice not found' })
+      notFound(res, 'Advice not found')
       return
     }
 
     if (!advice._createdBy || String(advice._createdBy) !== String(userId)) {
-      res.status(403).json({ message: 'You can only delete your own advice' })
+      forbidden(res, 'You can only delete your own advice')
       return
     }
 
@@ -107,18 +128,19 @@ export async function deleteAdviceById(req: Request, res: Response) {
 
 export async function updateAdviceById(req: Request, res: Response) {
   try {
-    const id = req.params.id
-    const userId = (req as any).user?.id
+    const rawId = req.params.id
+    const id = Array.isArray(rawId) ? rawId[0] : rawId
+    const userId = getUserId(req)
 
-    const advice = await AdviceModel.findById(id)
+    const advice = await adviceModel.findById(id)
 
     if (!advice) {
-      res.status(404).json({ message: 'Advice not found' })
+      notFound(res, 'Advice not found')
       return
     }
 
     if (!advice._createdBy || String(advice._createdBy) !== String(userId)) {
-      res.status(403).json({ message: 'You can only edit your own advice' })
+      forbidden(res, 'You can only edit your own advice')
       return
     }
 
@@ -130,12 +152,8 @@ export async function updateAdviceById(req: Request, res: Response) {
 
     const saved = await advice.save()
 
-    const populated = await AdviceModel
-      .findById(saved._id)
-      .populate('_createdBy', 'username')
-      .populate('replies._createdBy', 'username')
-
-    res.status(200).json(populated)
+    const populated = await findAndPopulateAdvice(saved._id)
+    res.status(200).json(sanitizeAdvice(populated))
   } catch (error: any) {
     if (error?.name === 'ValidationError') {
       res.status(400).json({ message: 'Validation failed', errors: error.errors })
@@ -148,7 +166,8 @@ export async function updateAdviceById(req: Request, res: Response) {
 
 export async function addReply(req: Request, res: Response) {
     try {
-        const { id } = req.params
+        const rawId = req.params.id
+        const id = Array.isArray(rawId) ? rawId[0] : rawId
         const { content, anonymous } = req.body
 
         if (!content) {
@@ -161,9 +180,9 @@ export async function addReply(req: Request, res: Response) {
             return
         }
 
-        const userId = (req as any).user?.id
+        const userId = getUserId(req)
 
-        const advice = await AdviceModel.findById(id)
+        const advice = await adviceModel.findById(id)
 
         if (!advice) {
             res.status(404).json({ message: 'Advice not found' })
@@ -179,12 +198,9 @@ export async function addReply(req: Request, res: Response) {
 
         await advice.save()
 
-        const populated = await AdviceModel
-            .findById(advice._id)
-            .populate('_createdBy', 'username')
-            .populate('replies._createdBy', 'username')
+        const populated = await findAndPopulateAdvice(advice._id)
 
-        res.status(201).json(populated)
+        res.status(201).json(sanitizeAdvice(populated))
     } catch (error: any) {
         if (error?.name === 'ValidationError') {
             res.status(400).json({
@@ -200,13 +216,17 @@ export async function addReply(req: Request, res: Response) {
 
 export async function deleteReplyById(req: Request, res: Response) {
   try {
-    const { adviceId, replyId } = req.params
-    const userId = (req as any).user?.id
+    const rawAdviceId = req.params.adviceId
+    const rawReplyId = req.params.replyId
+    const adviceId = Array.isArray(rawAdviceId) ? rawAdviceId[0] : rawAdviceId
+    const replyId = Array.isArray(rawReplyId) ? rawReplyId[0] : rawReplyId
 
-    const advice = await AdviceModel.findById(adviceId)
+    const userId = getUserId(req)
+
+    const advice = await adviceModel.findById(adviceId)
 
     if (!advice) {
-      res.status(404).json({ message: 'Advice not found' })
+      notFound(res, 'Advice not found')
       return
     }
 
@@ -218,19 +238,16 @@ export async function deleteReplyById(req: Request, res: Response) {
     }
 
     if (!reply._createdBy || String(reply._createdBy) !== String(userId)) {
-      res.status(403).json({ message: 'You can only delete your own reply' })
+      forbidden(res, 'You can only delete your own reply')
       return
     }
 
     reply.deleteOne()
     await advice.save()
 
-    const populated = await AdviceModel
-      .findById(advice._id)
-      .populate('_createdBy', 'username')
-      .populate('replies._createdBy', 'username')
+    const populated = await findAndPopulateAdvice(advice._id)
 
-    res.status(200).json(populated)
+    res.status(200).json(sanitizeAdvice(populated))
   } catch (error) {
     console.error('deleteReplyById error:', error)
     res.status(500).json({ message: 'Error deleting reply' })

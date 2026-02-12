@@ -34,7 +34,8 @@ export async function getAllAdvices(req: Request, res: Response) {
             .populate('replies._createdBy', 'username')
             .sort({ createdAt: -1 });
         
-        res.json(result.map(sanitizeAdvice));
+        const myUserId = getUserId(req)
+        res.json(result.map(a => sanitizeAdvice(a, myUserId)));
     }
 
     catch (error) {
@@ -63,7 +64,8 @@ export async function postAdvice(req: Request, res: Response): Promise<void> {
 
         const saved = await advice.save()
         const populated = await findAndPopulateAdvice(saved._id)
-        res.status(201).json(sanitizeAdvice(populated))
+        const myUserId = getUserId(req)
+        res.status(201).json(sanitizeAdvice(populated, myUserId))
     } catch (error: any) {
         if (error?.name === 'ValidationError') {
             res.status(400).json({
@@ -90,7 +92,8 @@ export async function getAdviceById(req: Request, res: Response) {
           return
         }
 
-        res.json(sanitizeAdvice(result));
+        const myUserId = getUserId(req)
+        res.json(sanitizeAdvice(result, myUserId));
     }
 
     catch (error) {
@@ -153,7 +156,8 @@ export async function updateAdviceById(req: Request, res: Response) {
     const saved = await advice.save()
 
     const populated = await findAndPopulateAdvice(saved._id)
-    res.status(200).json(sanitizeAdvice(populated))
+    const myUserId = getUserId(req)
+    res.status(200).json(sanitizeAdvice(populated, myUserId))
   } catch (error: any) {
     if (error?.name === 'ValidationError') {
       res.status(400).json({ message: 'Validation failed', errors: error.errors })
@@ -199,8 +203,8 @@ export async function addReply(req: Request, res: Response) {
         await advice.save()
 
         const populated = await findAndPopulateAdvice(advice._id)
-
-        res.status(201).json(sanitizeAdvice(populated))
+        const myUserId = getUserId(req)
+        res.status(201).json(sanitizeAdvice(populated, myUserId))
     } catch (error: any) {
         if (error?.name === 'ValidationError') {
             res.status(400).json({
@@ -246,8 +250,8 @@ export async function deleteReplyById(req: Request, res: Response) {
     await advice.save()
 
     const populated = await findAndPopulateAdvice(advice._id)
-
-    res.status(200).json(sanitizeAdvice(populated))
+    const myUserId = getUserId(req)
+    res.status(200).json(sanitizeAdvice(populated, myUserId))
   } catch (error) {
     console.error('deleteReplyById error:', error)
     res.status(500).json({ message: 'Error deleting reply' })
@@ -294,7 +298,8 @@ export async function updateReplyById(req: Request, res: Response) {
     await advice.save()
 
     const populated = await findAndPopulateAdvice(advice._id)
-    res.status(200).json(sanitizeAdvice(populated))
+    const myUserId = getUserId(req)
+    res.status(200).json(sanitizeAdvice(populated, myUserId))
   } catch (error: any) {
     if (error?.name === 'ValidationError') {
       res.status(400).json({ message: 'Validation failed', errors: error.errors })

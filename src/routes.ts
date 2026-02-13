@@ -11,6 +11,8 @@ import {
 } from './controllers/advice.controller'
 import { registerUser, loginUser } from './controllers/auth.controller'
 import { verifyToken } from './middleware/auth.middleware'
+import swaggerUi from 'swagger-ui-express'
+import { swaggerSpec } from './documentation/doc'
 
 const routes: Router = Router();
 
@@ -18,6 +20,16 @@ const routes: Router = Router();
 routes.get('/ok', (_req, res) => {
   res.json({ message: 'Welcome to Windows Vista Troubles... Troubleshooting! 👋', status: 'ok' })
 });
+
+/**
+ * Swagger docs
+ */
+routes.get('/docs.json', (_req, res) => {
+  res.setHeader('Content-Type', 'application/json')
+  res.send(swaggerSpec)
+})
+
+routes.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 // Auth (public)
 routes.post('/user/register', registerUser);

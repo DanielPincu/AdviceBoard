@@ -14,6 +14,11 @@ import { verifyToken } from './middleware/auth.middleware'
 
 const routes: Router = Router();
 
+// Welcome (public)
+routes.get('/ok', (_req, res) => {
+  res.json({ message: 'Welcome to Windows Vista Troubles... Troubleshooting! 👋', status: 'ok' })
+});
+
 // Auth (public)
 routes.post('/user/register', registerUser);
 routes.post('/user/login', loginUser);

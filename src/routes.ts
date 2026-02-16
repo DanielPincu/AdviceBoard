@@ -9,6 +9,8 @@ import {
     deleteReplyById,
     updateReplyById,
     searchAdvices,
+    getMyAdvices,
+    getAdvicesByUser,
 } from './controllers/advice.controller'
 
 import { registerUser, loginUser } from './controllers/auth.controller'
@@ -40,6 +42,9 @@ routes.post('/user/login', loginUser);
 // Advices (protected)
 routes.get('/advices', verifyToken, getAllAdvices);
 routes.get('/advices/search', verifyToken, searchAdvices);
+// Advices by user (protected)
+routes.get('/advices/mine', verifyToken, getMyAdvices);
+routes.get('/users/:userId/advices', verifyToken, getAdvicesByUser);
 routes.get('/advices/:id', verifyToken, getAdviceById);
 
 // Advices (protected)

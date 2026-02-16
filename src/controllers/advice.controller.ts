@@ -41,6 +41,55 @@ export async function getAllAdvices(req: Request, res: Response) {
     }
 }
 
+export async function getMyAdvices(req: Request, res: Response) {
+  try {
+    const myUserId = getUserId(req)
+    if (!myUserId) {
+      res.status(401).json({ message: 'Not authenticated' })
+      return
+    }
+
+    const results = await adviceModel
+      .find({ _createdBy: myUserId })
+      .populate('_createdBy', 'username')
+      .populate('replies._createdBy', 'username')
+      .sort({ createdAt: -1 })
+
+    res.json(results.map(a => sanitizeAdvice(a, myUserId)))
+  } catch (error) {
+    console.error('getMyAdvices error:', error)
+    res.status(500).json({ message: 'Error getting my advices' })
+  }
+}
+
+export async function getAdvicesByUser(req: Request, res: Response) {
+  try {
+    const raw = req.params.userId
+    const userId = Array.isArray(raw) ? raw[0] : raw
+
+    const myUserId = getUserId(req)
+
+    // Only show non-anonymous posts on public user profiles
+    const filter: any = { _createdBy: userId }
+
+    // If you are viewing someone else's profile, hide anonymous posts
+    if (!myUserId || String(myUserId) !== String(userId)) {
+      filter.anonymous = false
+    }
+
+    const results = await adviceModel
+      .find(filter)
+      .populate('_createdBy', 'username')
+      .populate('replies._createdBy', 'username')
+      .sort({ createdAt: -1 })
+
+    res.json(results.map(a => sanitizeAdvice(a, myUserId)))
+  } catch (error) {
+    console.error('getAdvicesByUser error:', error)
+    res.status(500).json({ message: 'Error getting advices by user' })
+  }
+}
+
 export async function postAdvice(req: Request, res: Response): Promise<void> {
     try {
         const { title, content, anonymous } = req.body

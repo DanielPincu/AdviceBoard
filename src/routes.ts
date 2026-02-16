@@ -7,8 +7,10 @@ import {
     updateAdviceById,
     addReply,
     deleteReplyById,
-    updateReplyById
+    updateReplyById,
+    searchAdvices,
 } from './controllers/advice.controller'
+
 import { registerUser, loginUser } from './controllers/auth.controller'
 import { verifyToken } from './middleware/auth.middleware'
 import swaggerUi from 'swagger-ui-express'
@@ -37,6 +39,7 @@ routes.post('/user/login', loginUser);
 
 // Advices (protected)
 routes.get('/advices', verifyToken, getAllAdvices);
+routes.get('/advices/search', verifyToken, searchAdvices);
 routes.get('/advices/:id', verifyToken, getAdviceById);
 
 // Advices (protected)

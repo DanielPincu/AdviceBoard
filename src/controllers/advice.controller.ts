@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import { Request, Response } from 'express';
 import { adviceModel } from '../models/advice.model';
 import { sanitizeAdvice } from '../utils/sanitizeAdvice';
+import { buildDynamicQuery } from './dynamicQueryBuilder';
 
 
 async function findAndPopulateAdvice(id: string | Types.ObjectId) {
@@ -95,6 +96,41 @@ export async function getAdviceById(req: Request, res: Response) {
     }
 
 }
+
+
+export async function searchAdvices(req: Request, res: Response) {
+  try {
+    const q = String(req.query.q || '').trim()
+    const key = String(req.query.key || '').trim()
+    const value = req.query.value
+
+    let filter = {}
+
+    if (q) {
+      filter = buildDynamicQuery(adviceModel, { key: 'q', value: q })
+    } else if (key && value !== undefined) {
+      filter = buildDynamicQuery(adviceModel, { key, value })
+    } else {
+      return res.status(400).json({
+        message: 'Provide ?q=... OR ?key=...&value=...',
+      })
+    }
+
+    const results = await adviceModel
+      .find(filter)
+      .populate('_createdBy', 'username')
+      .populate('replies._createdBy', 'username')
+
+    const myUserId = getUserId(req)
+    res.json(results.map(a => sanitizeAdvice(a, myUserId)))
+  } catch (error) {
+    console.error('searchAdvices error:', error)
+    res.status(500).json({ message: 'Error searching advices' })
+  }
+}
+
+
+
 
 export async function deleteAdviceById(req: Request, res: Response) {
   try {

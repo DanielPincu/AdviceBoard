@@ -19,22 +19,24 @@ export function sanitizeAdvice(advice: any, myUserId?: string) {
 
   if (Array.isArray(obj.replies)) {
     obj.replies = obj.replies.map((r: any) => {
+      const rr = r?.toObject ? r.toObject() : r
+
       const replyOwnerId =
-        r?._createdBy && typeof r._createdBy === 'object' && (r._createdBy as any)._id
-          ? String((r._createdBy as any)._id)
-          : typeof r?._createdBy === 'string'
-            ? String(r._createdBy)
+        rr?._createdBy && typeof rr._createdBy === 'object' && (rr._createdBy as any)._id
+          ? String((rr._createdBy as any)._id)
+          : typeof rr?._createdBy === 'string'
+            ? String(rr._createdBy)
             : null
 
-      // Safe ownership flag for replies
-      r._isMine = Boolean(myUserId && replyOwnerId && String(myUserId) === replyOwnerId)
+      // ALWAYS attach _isMine (true or false)
+      rr._isMine = Boolean(myUserId && replyOwnerId && String(myUserId) === replyOwnerId)
 
       // ALWAYS hide identity if anonymous
-      if (r?.anonymous) {
-        delete r._createdBy
+      if (rr?.anonymous) {
+        delete rr._createdBy
       }
 
-      return r
+      return rr
     })
   }
 
